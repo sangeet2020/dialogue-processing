@@ -29,7 +29,11 @@ def train(config):
     model_name = config["model_name"]
 
     # Initialize dataset.
-    train_set = Restaurant8kDataset(config["train_path"], config["include_all"])
+    train_set = Restaurant8kDataset(config["train_path"],
+                                    config["tokenizer_model"],
+                                    config["slot_max_len"],
+                                    config["utt_max_len"],
+                                    config["include_all"])
     print(f"Number of training examples: {len(train_set)}")
 
     device = torch.device('cuda' if config["use_cuda"] else 'cpu')
@@ -52,8 +56,6 @@ def train(config):
         # Compare losses and store model if better
     
         print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
-        print(train_set[epoch])
-        print()
 
 
 if __name__ == "__main__":
