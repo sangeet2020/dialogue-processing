@@ -11,12 +11,17 @@ class OurModel(nn.Module):
         super(OurModel, self).__init__()
 
         # Slot encoder - BERT model
+        # This encoder's parameters are not fine-tuned (Same as in SUMBT paper)
         self.slot_encoder = BertModel.from_pretrained(config["bert_model"])
         for param in self.slot_encoder.parameters():
             param.requires_grad = False
         
         # Utterance encoder - SpanBERT model
         self.utt_encoder = AutoModel.from_pretrained(config["span_bert_model"])
+
+        # MultiHead attention component
+
+        # RNN for BIO tagging component
     
     def forward(self, slot, slot_attn_mask, utt, utt_attn_mask):
         # slot shape: [32, 1, 5]

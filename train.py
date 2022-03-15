@@ -23,7 +23,6 @@ def train_epoch(model, train_set, batch_size, use_cuda):
         outputs = batch[4].cuda() if use_cuda else batch[4]
 
         output = model(encoded_slots, slots_attn_masks, encoded_utts, utts_attn_masks)
-        break
 
         # Training step
         
@@ -52,7 +51,7 @@ def train(config):
     # Optimizer and loss function initialization
 
     # Training loop
-    for epoch in range(1):
+    for epoch in range(num_epochs):
         start_time = time.time()
 
         # Epoch training step
