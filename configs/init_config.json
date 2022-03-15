@@ -9,7 +9,7 @@
     "num_epochs": 5,
     "batch_size": 32,
     "bert_model": "bert-base-cased",
-    "span_bert_model": "spanbert-base-cased",
+    "span_bert_model": "SpanBERT/spanbert-base-cased",
     "slot_max_len": 5,
     "utt_max_len": 50
 }

@@ -16,7 +16,7 @@ class OurModel(nn.Module):
             param.requires_grad = False
         
         # Utterance encoder - SpanBERT model
-        #self.utt_encoder = AutoModel.from_pretrained(config["span_bert_model"])
+        self.utt_encoder = AutoModel.from_pretrained(config["span_bert_model"])
     
     def forward(self, slot, slot_attn_mask, utt, utt_attn_mask):
         # slot shape: [32, 1, 5]
@@ -35,5 +35,17 @@ class OurModel(nn.Module):
         slot_vector = slot_vector.pooler_output
 
         # === Get SpanBERT contextualised vectors for each token in utterance ===
-        print(utt.shape)
-        print(utt_attn_mask.shape)
+        # Remove dimension 1 since SpanBERT model expects [B(atch), N(umber of tokens)] shape
+        utt = utt.squeeze(dim=1)
+        utt_attn_mask = utt_attn_mask.squeeze(dim=1)
+        utt_vectors = self.utt_encoder(utt, attention_mask=utt_attn_mask)
+        
+        # SpanBERT last hidden state output for each input token
+        # utt_vectors shape: [32, 50, 768]
+        utt_vectors = utt_vectors.last_hidden_state
+
+        # === Apply MultiHead attention between slot vector and utterance's tokens
+        # Query is slot vector, while keys and values are utterance's tokens vectors
+
+        # === Use RNN to output utterance tagged using BIO format ===
+
