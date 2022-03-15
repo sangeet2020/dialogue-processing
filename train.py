@@ -5,17 +5,25 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
+from model.model import OurModel
 from utils.util import open_file, set_seed, epoch_time
 from data.restaurant_dataset import Restaurant8kDataset
 
 
-def train_epoch(train_set, batch_size):
+def train_epoch(model, train_set, batch_size, use_cuda):
     data_loader = DataLoader(train_set, batch_size=batch_size, shuffle=False)
 
     epoch_loss = 0
     for batch in tqdm(data_loader):
         # Initialize a batch
-        print(batch)
+        encoded_slots = batch[0].cuda() if use_cuda else batch[0]
+        slots_attn_masks = batch[1].cuda() if use_cuda else batch[1]
+        encoded_utts = batch[2].cuda() if use_cuda else batch[2]
+        utts_attn_masks = batch[3].cuda() if use_cuda else batch[3]
+        outputs = batch[4].cuda() if use_cuda else batch[4]
+
+        output = model(encoded_slots, slots_attn_masks, encoded_utts, utts_attn_masks)
+        break
 
         # Training step
         
@@ -30,7 +38,7 @@ def train(config):
 
     # Initialize dataset.
     train_set = Restaurant8kDataset(config["train_path"],
-                                    config["tokenizer_model"],
+                                    config["bert_model"],
                                     config["slot_max_len"],
                                     config["utt_max_len"],
                                     config["include_all"])
@@ -39,16 +47,16 @@ def train(config):
     device = torch.device('cuda' if config["use_cuda"] else 'cpu')
 
     # Model initialization
-    # model = 
+    model = OurModel(config)
 
     # Optimizer and loss function initialization
 
     # Training loop
-    for epoch in range(num_epochs):
+    for epoch in range(1):
         start_time = time.time()
 
         # Epoch training step
-        #train_loss = train_epoch(train_set, batch_size)
+        train_loss = train_epoch(model, train_set, batch_size, config["use_cuda"])
         
         end_time = time.time()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)

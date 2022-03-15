@@ -45,7 +45,11 @@ class Restaurant8kDataset(Dataset):
         encoded_utt_attn_mask = encoded_utt["attention_mask"]
 
         # === Tag utterance with BIO tags ===
-        tokenized_utt_len = int((encoded_utt_ids == 0).nonzero(as_tuple=True)[1][0])
+        pad_mask_start_indices = (encoded_utt_ids == 0).nonzero(as_tuple=True)[1]
+        if pad_mask_start_indices.numel():
+            tokenized_utt_len = int(pad_mask_start_indices[0])
+        else:
+            tokenized_utt_len = int(encoded_utt_ids.shape[1])
         bio_tags = torch.zeros((1, self.utt_max_len))
         bio_tags[:, :tokenized_utt_len] = self.bio_to_id['O']
         if slot_value:
