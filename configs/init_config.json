@@ -1,0 +1,11 @@
+{
+    "train_path": "data/train_0.json",
+    "test_path": "data/test.json",
+    "experiments_dir": "experiments",
+    "model_name": "init_model.pt",
+    "seed": 77,
+    "use_cuda": false,
+    "include_all": true,
+    "num_epochs": 5,
+    "batch_size": 32
+}
