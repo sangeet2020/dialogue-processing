@@ -60,7 +60,7 @@ def train(config):
 
     # Optimizer and loss function initialization
     optimizer = optim.Adam(model.parameters(), lr=config["learning_rate"])
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(ignore_index=train_set.get_tag_id('P'))
     
     # Training loop
     train_losses = []

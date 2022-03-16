@@ -102,3 +102,6 @@ class Restaurant8kDataset(Dataset):
     
     def num_of_bio_tags(self):
         return len(self.bio_to_id)
+    
+    def get_tag_id(self, tag):
+        return self.bio_to_id[tag]
