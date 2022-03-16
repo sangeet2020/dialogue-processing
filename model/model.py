@@ -28,7 +28,6 @@ class MultiHeadAttention(nn.Module):
         
         self.dropout = self.dropout = nn.Dropout(dropout)
         
-        
     def forward(self, Q, K, V, mask=None):
         batch_size = Q.shape[0]
         
@@ -46,14 +45,22 @@ class MultiHeadAttention(nn.Module):
         
         X = X.transpose(1, 2).contiguous().view(batch_size, -1, self.hid_dim)
         self.X = self.out(X)    # [32, 1, 768]
-        return self.attn_scores, self.X 
-        
+        return self.attn_scores, self.X   
 
 
 class OurModel(nn.Module):
     
-    def __init__(self, config):
+    def __init__(self, config, num_tags, device):
         super(OurModel, self).__init__()
+
+        self.utt_max_len = config["utt_max_len"]
+        self.heads = config["heads"]    # number of heads in multi-headed attention
+        self.dropout_prob = config["dropout"]
+        self.rnn_hidden_dim = config["rnn_hidden_dim"]
+        self.rnn_input_size = config["rnn_input_size"]
+        self.rnn_num_layers = config["rnn_num_layers"]
+        self.num_tags = num_tags
+        self.device = device
 
         # Slot encoder - BERT model
         # This encoder's parameters are not fine-tuned (Same as in SUMBT paper)
@@ -66,33 +73,29 @@ class OurModel(nn.Module):
 
         # MultiHead attention component
         self.bert_output_dim = self.utt_encoder.config.hidden_size  # 768
-        self.heads = config["heads"]    # number of heads in multi-headed attention
-        self.mha = MultiHeadAttention(self.bert_output_dim, self.heads, dropout=config["dropout"])
+        self.mha = MultiHeadAttention(self.bert_output_dim, self.heads, dropout=self.dropout_prob)
 
         # RNN for BIO tagging component
-        self.hidden_dim = config["hidden_dim"]
-        self.rnn_num_layers = config["rnn_num_layers"]
-        self.hidden_dropout_prob = self.utt_encoder.config.hidden_dropout_prob
-
-        self.rnn = nn.LSTM(input_size=self.bert_output_dim,     # 768
-                            hidden_size=self.hidden_dim,        # 100, 200, 300
-                            num_layers=self.rnn_num_layers,     # 1
-                            dropout=self.hidden_dropout_prob,   
+        self.transform_to_rnn_input = nn.Linear(2*self.bert_output_dim, self.rnn_input_size)
+        self.sigmoid = nn.Sigmoid()
+        self.rnn = nn.LSTM(input_size=self.rnn_input_size,
+                            hidden_size=self.rnn_hidden_dim,
+                            num_layers=self.rnn_num_layers,
+                            dropout=self.dropout_prob,   
                             batch_first=True)
         self.init_parameter(self.rnn)
         
-        
-        self.slot_dim = config["slot_max_len"]
-        self.linear = nn.Linear(self.hidden_dim, self.bert_output_dim)
-        self.layer_norm = nn.LayerNorm(self.bert_output_dim)
-        self.dropout = nn.Dropout(self.hidden_dropout_prob)
-        self.sigmoid = nn.Sigmoid()
-    
+        self.transform_to_tags = nn.Linear(self.rnn_hidden_dim, self.num_tags)
+        self.layer_norm = nn.LayerNorm(self.num_tags)
+        self.dropout = nn.Dropout(self.dropout_prob)
+
     def forward(self, slot, slot_attn_mask, utt, utt_attn_mask):
         # slot shape: [32, 1, 5]
         # slot_attn_mask shape: [32, 1, 5]
         # utt shape: [32, 1, 50]
         # utt_attn_mask shape: [32, 1, 50]
+
+        batch_size = slot.shape[0]
         
         # === Get a single BERT contextualised vector for a slot ===
         # Remove dimension 1 since BERT model expects [B(atch), N(umber of tokens)] shape
@@ -119,23 +122,35 @@ class OurModel(nn.Module):
         Q = slot_vector
         K = utt_vectors
         V = utt_vectors
-        attn_scores, X, = self.mha(Q, K, V, mask=None)     # X = [32, 1, 768]
+        attn_scores, X, = self.mha(Q, K, V, mask=None)
+        X = X.squeeze(dim=1) # X = [32, 768]
                 
         # === Use RNN to output utterance tagged using BIO format ===
-        # set initial hidden of rnns zero
-        input_ids = slot
-        pdb.set_trace()
-        h = torch.zeros(self.rnn_num_layers, input_ids.shape[0], self.hidden_dim)
-        c = torch.zeros(self.rnn_num_layers, input_ids.shape[0], self.hidden_dim)
-        rnn_out, _ = self.rnn(X, (h, c))    # [32, 1, 100]
-        
-        rnn_out = self.layer_norm(self.linear(self.dropout(rnn_out)))   # [32, 1, 768]
-        hidden = rnn_out.view(self.slot_dim, input_ids.shape[0], input_ids.shape[1], -1) ## something wrong with this step
-        hidden = self.sigmoid(hidden)   # This should be [32, 5, 768]
-        pdb.set_trace()
-        return hidden
-        
+        # Outputs will contain the final output
+        outputs = torch.zeros(batch_size, self.utt_max_len, self.num_tags).to(self.device)
 
+        # set initial with zeros hidden and cell state of rnn
+        h = torch.zeros(self.rnn_num_layers, batch_size, self.rnn_hidden_dim).to(self.device)
+        c = torch.zeros(self.rnn_num_layers, batch_size, self.rnn_hidden_dim).to(self.device)
+
+        for t in range(self.utt_max_len):
+            # Create input for the LSTM
+            input_token = utt_vectors[:, t, :]  # [32, 768]
+            lstm_input = torch.cat((input_token, X), dim=1) # [32, 1536]
+            lstm_input = self.sigmoid(self.transform_to_rnn_input(lstm_input)) # [32, rnn_input_size]
+            lstm_input = lstm_input.unsqueeze(dim=1) # [32, 1, rnn_input_size]
+
+            # LSTM step
+            lstm_output, (h, c) = self.rnn(lstm_input, (h, c))
+            lstm_output = self.layer_norm(self.transform_to_tags(self.dropout(lstm_output))) # [32, 1, num_tags]
+            lstm_output = lstm_output.squeeze(dim=1)
+
+            # Store the LSTM output
+            outputs[:, t, :] = lstm_output
+        
+        outputs = outputs.permute(0, 2, 1) # [32, num_tags, 50]
+
+        return outputs
                 
     @staticmethod
     def init_parameter(module):
@@ -143,4 +158,3 @@ class OurModel(nn.Module):
         torch.nn.init.xavier_normal_(module.weight_hh_l0)
         torch.nn.init.constant_(module.bias_ih_l0, 0.0)
         torch.nn.init.constant_(module.bias_hh_l0, 0.0)
-

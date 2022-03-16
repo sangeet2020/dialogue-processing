@@ -61,7 +61,7 @@ class Restaurant8kDataset(Dataset):
             bio_tags[:, value_start_index+1:value_start_index+values_tokens_len] = self.bio_to_id['I']
 
         # === Return all encoded_slot, encoded_utterance, tagged_utterance ===
-        return encoded_slot_ids, encoded_slot_attn_mask, encoded_utt_ids, encoded_utt_attn_mask, bio_tags
+        return encoded_slot_ids, encoded_slot_attn_mask, encoded_utt_ids, encoded_utt_attn_mask, bio_tags.type(torch.LongTensor)
 
     def __len__(self):
         return self.num_examples
@@ -99,3 +99,6 @@ class Restaurant8kDataset(Dataset):
                                       "end_index": end_index})
 
         self.num_examples = len(self.data)
+    
+    def num_of_bio_tags(self):
+        return len(self.bio_to_id)

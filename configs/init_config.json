@@ -4,8 +4,8 @@
     "experiments_dir": "experiments",
     "model_name": "init_model.pt",
     "seed": 77,
-    "use_cuda": false,
-    "include_all": true,
+    "use_cuda": true,
+    "include_all": false,
     "num_epochs": 5,
     "batch_size": 32,
     "bert_model": "bert-base-cased",
@@ -15,6 +15,7 @@
     "heads": 8,
     "dropout": 0.1,
     "rnn_num_layers": 1,
-    "hidden_dim": 100,
+    "rnn_input_size": 512,
+    "rnn_hidden_dim": 100,
     "learning_rate": 1e-5
 }

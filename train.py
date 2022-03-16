@@ -23,14 +23,18 @@ def train_epoch(model, criterion, optimizer, train_set, batch_size, use_cuda):
         slots_attn_masks = batch[1].cuda() if use_cuda else batch[1]
         encoded_utts = batch[2].cuda() if use_cuda else batch[2]
         utts_attn_masks = batch[3].cuda() if use_cuda else batch[3]
-        true_labels = batch[4].cuda() if use_cuda else batch[4]     # [32, 1, 50]
+        true_labels = batch[4].cuda() if use_cuda else batch[4]
+        true_labels = true_labels.squeeze(dim=1) # [32, 50]
         
         # Training step
         output = model(encoded_slots, slots_attn_masks, encoded_utts, utts_attn_masks)
-        loss = criterion(output, true_labels).item()
-        epoch_loss += loss
-        optimizer.zero_grad(); loss.backward(); optimizer.step()
-        
+
+        loss = criterion(output, true_labels)
+        epoch_loss += loss.item()
+
+        optimizer.zero_grad(); 
+        loss.backward(); 
+        optimizer.step()
         
     return epoch_loss / len(data_loader)
 
@@ -52,24 +56,32 @@ def train(config):
     device = torch.device('cuda' if config["use_cuda"] else 'cpu')
 
     # Model initialization
-    model = OurModel(config)
+    model = OurModel(config, train_set.num_of_bio_tags(), device).to(device)
 
     # Optimizer and loss function initialization
     optimizer = optim.Adam(model.parameters(), lr=config["learning_rate"])
     criterion = nn.CrossEntropyLoss()
     
     # Training loop
+    train_losses = []
+    best_train_loss = float('inf')
     for epoch in range(num_epochs):
         start_time = time.time()
 
         # Epoch training step
         train_loss = train_epoch(model, criterion, optimizer, train_set, batch_size, config["use_cuda"])
-        
+
         end_time = time.time()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
 
         # Compare losses and store model if better
+        if train_loss < best_train_loss:
+            best_train_loss = train_loss
+            torch.save(model.state_dict(), model_name)
+        train_losses.append(train_loss)
+
         print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s | Train loss: {train_loss:0.2}')
+        print(f'\tTrain Loss: {train_loss:.3f}')
 
 
 if __name__ == "__main__":
