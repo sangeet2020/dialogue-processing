@@ -11,5 +11,10 @@
     "bert_model": "bert-base-cased",
     "span_bert_model": "SpanBERT/spanbert-base-cased",
     "slot_max_len": 5,
-    "utt_max_len": 50
+    "utt_max_len": 50,
+    "heads": 8,
+    "dropout": 0.1,
+    "rnn_num_layers": 1,
+    "hidden_dim": 100,
+    "learning_rate": 1e-5
 }
