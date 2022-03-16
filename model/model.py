@@ -81,8 +81,7 @@ class OurModel(nn.Module):
                             batch_first=True)
         self.init_parameter(self.rnn)
         
-        # self.linear = nn.Linear(self.hidden_dim, config["utt_max_len"])
-        # self.layer_norm = nn.LayerNorm(config["utt_max_len"])
+        
         self.slot_dim = config["slot_max_len"]
         self.linear = nn.Linear(self.hidden_dim, self.bert_output_dim)
         self.layer_norm = nn.LayerNorm(self.bert_output_dim)
@@ -126,14 +125,13 @@ class OurModel(nn.Module):
         # set initial hidden of rnns zero
         input_ids = slot
         pdb.set_trace()
-        h = torch.zeros(self.rnn_num_layers, input_ids.shape[0] * self.slot_dim, self.hidden_dim)    # [1, 32, 100]
-        c = torch.zeros(self.rnn_num_layers, input_ids.shape[0] * self.slot_dim, self.hidden_dim)    # [1, 32, 100]
-        rnn_out, _ = self.rnn(X, (h, c))
+        h = torch.zeros(self.rnn_num_layers, input_ids.shape[0], self.hidden_dim)
+        c = torch.zeros(self.rnn_num_layers, input_ids.shape[0], self.hidden_dim)
+        rnn_out, _ = self.rnn(X, (h, c))    # [32, 1, 100]
         
-
-        rnn_out = self.layer_norm(self.linear(self.dropout(rnn_out)))   # rnn_out = [32, 1, 50]        
-        hidden = rnn_out.view(self.slot_dim, input_ids.shape[0], input_ids.shape[1], -1)
-        hidden = self.sigmoid(hidden)
+        rnn_out = self.layer_norm(self.linear(self.dropout(rnn_out)))   # [32, 1, 768]
+        hidden = rnn_out.view(self.slot_dim, input_ids.shape[0], input_ids.shape[1], -1) ## something wrong with this step
+        hidden = self.sigmoid(hidden)   # This should be [32, 5, 768]
         pdb.set_trace()
         return hidden
         
