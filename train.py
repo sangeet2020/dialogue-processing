@@ -1,5 +1,5 @@
 import time
-import pdb
+import json
 
 from tqdm import tqdm
 
@@ -82,6 +82,9 @@ def train(config):
 
         print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s | Train loss: {train_loss:0.2}')
         print(f'\tTrain Loss: {train_loss:.3f}')
+    
+    with open(f"{model_name.split('.')[0]}_losses.json", 'w+') as json_file:
+        json.dump({"train_losses": train_losses}, json_file, indent=4)
 
 
 if __name__ == "__main__":
