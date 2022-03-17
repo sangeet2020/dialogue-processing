@@ -109,9 +109,7 @@ class Classify(object):
         with open(f"results/test_prediction.json", 'w+') as json_file:
             json.dump(self.true_vs_pred_dict, json_file, indent=4)
         
-        
-        
-        
+
     def _id2bio(self, id_list, utt, example_id):
         # Tag2id mappings
         bio_to_id = {'B': 1, 'I': 2, 'O': 3, 'P': 0}
@@ -156,25 +154,10 @@ def main():
     clf.load_model()
     clf.predict()
     
-    
 
-    
-
-    
 if __name__ == "__main__":
     main()
     
-# Example of incorrect slot filling: (Quoted from Example: 2 in train set)
-# Actual above; predicte below
-# [3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 2, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-# [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
-# 
-# ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'O', 'O', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P']
-# ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
-# 
-# 
-# [['O', '[CLS]'], ['O', 'We'], ['O', 'will'], ['O', 'require'], ['O', 'and'], ['O', 'outside'], ['O', 'table'], ['O', 'to'], ['O', 'seat'], ['B', '9'], ['I', 'people'], ['O', 'on'], ['O', 'August'], ['O', '23rd'], ['O', '[SEP]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]']]
-# [['O', '[CLS]'], ['O', 'We'], ['O', 'will'], ['O', 'require'], ['O', 'and'], ['O', 'outside'], ['O', 'table'], ['O', 'to'], ['O', 'seat'], ['O', '9'], ['O', 'people'], ['O', 'on'], ['B', 'August'], ['O', '23rd'], ['O', '[SEP]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]']]
 
 # Example of incorrect slot filling: (Quoted from Example: 7 in train set)
 # Actual above; predicte below
