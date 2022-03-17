@@ -15,6 +15,7 @@ from tqdm import tqdm
 import pdb
 import json
 from sklearn.metrics import f1_score
+from sklearn.metrics import precision_recall_fscore_support
 
 import torch
 import torch.nn as nn
@@ -34,7 +35,7 @@ class Classify(object):
         self.config = config
     
     def load_test_data(self):
-        self.test_set = Restaurant8kDataset(self.config["test_path"],
+        self.test_set = Restaurant8kDataset(self.config["train_path"],
                                             self.config["bert_model"],
                                             self.config["slot_max_len"],
                                             self.config["utt_max_len"],
@@ -65,6 +66,8 @@ class Classify(object):
         actual = []
         predicted = []
         use_cuda = self.config["use_cuda"]
+        prec_set, rec_set, f1_set = [], [], []
+        slot_specific_scores = {}
         with torch.no_grad():
             for batch in tqdm(data_loader):
                 # Initialize a batch
@@ -90,9 +93,13 @@ class Classify(object):
                     
                     # passing the id only to debug certain examples, that are missing predicted labels
                     id += 1
-                    dec_true_label, true_value = self._id2bio(true_lab.detach().cpu().numpy().tolist(), enc_utt_ids, id)
-                    dec_pred_label, pred_value = self._id2bio(pred_lab.detach().cpu().numpy().tolist(), enc_utt_ids, id)
-                    
+                    dec_true_label, true_value, true_bio_sequence = self._id2bio(true_lab.detach().cpu().numpy().tolist(), enc_utt_ids, id)
+                    dec_pred_label, pred_value, pred_bio_sequence = self._id2bio(pred_lab.detach().cpu().numpy().tolist(), enc_utt_ids, id)
+                    # pdb.set_trace()
+                    prec, rec, f1, _ = precision_recall_fscore_support(true_bio_sequence, pred_bio_sequence, average='macro')
+                    prec_set.append(prec)
+                    rec_set.append(rec)
+                    f1_set.append(f1)
                     text = "Example: " + str(id)
                     self.true_vs_pred_dict[text] = {
                         "Text": dec_utt,
@@ -100,14 +107,41 @@ class Classify(object):
                         "True Value": true_value,
                         "True Label": dec_true_label,
                         "Pred Value": pred_value,
-                        "Pred Label": dec_pred_label
+                        "Pred Label": dec_pred_label,
+                        "Precision": prec,
+                        "Recall": rec,
+                        "F1": f1,
                     }
-                    # print(dec_utt)
+                    
+                    # Sot specific F1 scores
+                    if dec_slot in slot_specific_scores:
+                        slot_specific_scores[dec_slot].append(f1)
+                    else:
+                        slot_specific_scores[dec_slot] = [f1]
+                # pdb.set_trace()
         
-        # Compute Prec, Rec, F1 for entire batch
-        # print('F1 = {}'.format(self._f1_metric(actual, predicted)))
-        with open(f"results/test_prediction.json", 'w+') as json_file:
+        # Compute avg Prec, Rec, F1 on entire set
+        prec_set = 100*np.mean(np.asarray(prec_set))
+        rec_set = 100*np.mean(np.asarray(rec_set))
+        f1_set = 100*np.mean(np.asarray(f1_set))
+        print('Precision = {:02} | Recall = {:02} | F1 = {:02}'.format(prec_set, rec_set, f1_set))
+        
+        # Compute avg slot specific scores across all samples
+        for slot, score_list in slot_specific_scores.items():
+            slot_specific_scores[slot] = 100*np.mean(np.asarray(score_list))
+        
+        set = "train"
+        with open("results/"+set+ "_prediction.json", 'w') as json_file:
             json.dump(self.true_vs_pred_dict, json_file, indent=4)
+            
+        with open("results/"+set+ "_slot_speific_F1.json", 'w') as json_file:
+            json.dump(slot_specific_scores, json_file, indent=4)
+        
+        with open("results/"+set+ "_metric_score.json", 'w') as json_file:
+            json.dump({"Precision": prec_set,
+                       "Recall": rec_set,
+                       "F1": f1_set
+                       }, json_file, indent=4)
         
 
     def _id2bio(self, id_list, utt, example_id):
@@ -134,13 +168,16 @@ class Classify(object):
         
         bio_label = []
         value = []
+        bio_sequence = []
         for tup in id_utt:
             if tup[1] not in special_tokens.values():
+                bio_sequence.append(tup[0])
                 if tup[0] in ["B", "I"]: # Start of span and inside
                     bio_label.append(tup[0])
                     value.append(tup[1])
-
-        return " ".join(bio_label),  " ".join(value)
+        # if example_id == 7:
+        #     pdb.set_trace()
+        return " ".join(bio_label),  " ".join(value), bio_sequence
     
     def _f1_metric(self, pred, true):
         return f1_score(true, pred)
@@ -171,3 +208,5 @@ if __name__ == "__main__":
 # 
 # [['O', '[CLS]'], ['O', 'Can'], ['O', 'i'], ['O', 'ch'], ['O', '##nage'], ['O', 'my'], ['O', 'booking'], ['O', 'from'], ['O', '18'], ['O', ':'], ['O', '00'], ['O', 'for'], ['O', '3'], ['O', 'people'], ['O', 'to'], ['B', '17'], ['I', ':'], ['I', '45'], ['O', 'for'], ['O', '4'], ['O', 'people'], ['O', '?'], ['O', '[SEP]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]']]
 # [['O', '[CLS]'], ['O', 'Can'], ['O', 'i'], ['O', 'ch'], ['O', '##nage'], ['O', 'my'], ['O', 'booking'], ['O', 'from'], ['O', '18'], ['O', ':'], ['O', '00'], ['O', 'for'], ['O', '3'], ['O', 'people'], ['O', 'to'], ['O', '17'], ['O', ':'], ['O', '45'], ['O', 'for'], ['O', '4'], ['O', 'people'], ['O', '?'], ['O', '[SEP]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]']]
+
+    
