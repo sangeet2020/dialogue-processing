@@ -1,4 +1,5 @@
 import torch
+import pdb
 from torch.utils.data import Dataset
 
 from transformers import BertTokenizer
@@ -56,10 +57,14 @@ class Restaurant8kDataset(Dataset):
             encoded_slot_value = self.tokenizer(slot_value, add_special_tokens=False, return_tensors="pt")
             first_value_token = int(encoded_slot_value["input_ids"][0][0])
             values_tokens_len = encoded_slot_value["input_ids"].shape[1]
-            value_start_index = int((encoded_utt_ids == first_value_token).nonzero(as_tuple=True)[1][0])
-            bio_tags[:, value_start_index] = self.bio_to_id['B']
-            bio_tags[:, value_start_index+1:value_start_index+values_tokens_len] = self.bio_to_id['I']
-
+            if first_value_token in encoded_utt_ids:
+                value_start_index = int((encoded_utt_ids == first_value_token).nonzero(as_tuple=True)[1][0])
+                bio_tags[:, value_start_index] = self.bio_to_id['B']
+                bio_tags[:, value_start_index+1:value_start_index+values_tokens_len] = self.bio_to_id['I']
+            else:
+                print("Corrupted sample found. Slot value not found in utterance. Skipping")
+                pass
+            
         # === Return all encoded_slot, encoded_utterance, tagged_utterance ===
         return encoded_slot_ids, encoded_slot_attn_mask, encoded_utt_ids, encoded_utt_attn_mask, bio_tags.type(torch.LongTensor)
 
@@ -97,7 +102,7 @@ class Restaurant8kDataset(Dataset):
                                       "slot": slot,
                                       "start_index": start_index, 
                                       "end_index": end_index})
-
+        # pdb.set_trace()
         self.num_examples = len(self.data)
     
     def num_of_bio_tags(self):
@@ -105,3 +110,6 @@ class Restaurant8kDataset(Dataset):
     
     def get_tag_id(self, tag):
         return self.bio_to_id[tag]
+
+# Corrupted utterance
+# 'I need at table for 5 a t06:15 PM three days from today and we would like to sit in the restaurant.'
