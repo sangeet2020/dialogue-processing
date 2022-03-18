@@ -35,7 +35,7 @@ class Classify(object):
         self.config = config
     
     def load_test_data(self):
-        self.test_set = Restaurant8kDataset(self.config["train_path"],
+        self.test_set = Restaurant8kDataset(self.config["test_path"],
                                             self.config["bert_model"],
                                             self.config["slot_max_len"],
                                             self.config["utt_max_len"],
@@ -130,7 +130,7 @@ class Classify(object):
         for slot, score_list in slot_specific_scores.items():
             slot_specific_scores[slot] = 100*np.mean(np.asarray(score_list))
         
-        set = "train"
+        set = "test"
         with open("results/"+set+ "_prediction.json", 'w') as json_file:
             json.dump(self.true_vs_pred_dict, json_file, indent=4)
             
@@ -175,8 +175,7 @@ class Classify(object):
                 if tup[0] in ["B", "I"]: # Start of span and inside
                     bio_label.append(tup[0])
                     value.append(tup[1])
-        # if example_id == 7:
-        #     pdb.set_trace()
+                    
         return " ".join(bio_label),  " ".join(value), bio_sequence
     
     def _f1_metric(self, pred, true):
@@ -209,4 +208,10 @@ if __name__ == "__main__":
 # [['O', '[CLS]'], ['O', 'Can'], ['O', 'i'], ['O', 'ch'], ['O', '##nage'], ['O', 'my'], ['O', 'booking'], ['O', 'from'], ['O', '18'], ['O', ':'], ['O', '00'], ['O', 'for'], ['O', '3'], ['O', 'people'], ['O', 'to'], ['B', '17'], ['I', ':'], ['I', '45'], ['O', 'for'], ['O', '4'], ['O', 'people'], ['O', '?'], ['O', '[SEP]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]'], ['P', '[PAD]']]
 # [['O', '[CLS]'], ['O', 'Can'], ['O', 'i'], ['O', 'ch'], ['O', '##nage'], ['O', 'my'], ['O', 'booking'], ['O', 'from'], ['O', '18'], ['O', ':'], ['O', '00'], ['O', 'for'], ['O', '3'], ['O', 'people'], ['O', 'to'], ['O', '17'], ['O', ':'], ['O', '45'], ['O', 'for'], ['O', '4'], ['O', 'people'], ['O', '?'], ['O', '[SEP]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]'], ['O', '[PAD]']]
 
-    
+
+
+
+
+
+
+
