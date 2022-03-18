@@ -44,24 +44,24 @@ This will use the saved model and evaluate on the test set. Model predictions ar
 ## Results
 1. Slot specific scores
 ```
-Slot type	    All utts	Only labelled utts
-people	        74.78	    74.88
-date	        86.22	    85.93
-time	        98.24	    96.68
-first_name	    67.36	    49.48
-last_name	    35.33	    35.95
+Slot type	All utts	Only labelled utts
+people		74.78	    	74.88
+date	        86.22	    	85.93
+time	        98.24	    	96.68
+first_name	67.36	    	49.48
+last_name	35.33	    	35.95
 ```
 2. Mean scores across all utts
 ```
 	        Train	Test
 Precision	83.76	82.84
-Recall	    85.17	84.25
+Recall	    	85.17	84.25
 F1	        84.3	83.32
 ```
 3. Example of correct prediction
 ```
-Text	    I would like a table in 2 days for me and my 4 children.				
-Slot	    date				
+Text	    	I would like a table in 2 days for me and my 4 children.				
+Slot	    	date				
 True Value	in 2 days				
 True Label	B I I				
 Pred Value	in 2 days,				
@@ -69,8 +69,8 @@ Pred Label	B I I
 ```
 4. Example of incorrect prediction
 ```
-Text	    Can i chnage my booking from 18 : 00 for 3 people to 17 : 45 for 4 people?			
-Slot	    time				
+Text	    	Can i chnage my booking from 18 : 00 for 3 people to 17 : 45 for 4 people?			
+Slot	    	time				
 True Value	17 : 45				
 True Label	B I I				
 Pred Value	00 17 : 45				
